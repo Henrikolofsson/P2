@@ -58,6 +58,12 @@
             android:text="Switch"
             android:textOff="@string/Unregistered"
             android:textOn="@string/Registered" />
+
+        <Button
+            android:id="@+id/getAvailableGroups"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="getgroups" />
     </LinearLayout>
 
     <LinearLayout

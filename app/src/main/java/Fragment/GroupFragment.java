@@ -17,7 +17,6 @@ import henrik.mau.p2.R;
 public class GroupFragment extends Fragment {
     private Controller controller;
     private TextView tvGroupName;
-    private TextView tvGroupMembers;
 
 
     public GroupFragment() {
@@ -35,7 +34,6 @@ public class GroupFragment extends Fragment {
 
     private void initializeComponents(View view){
         tvGroupName = (TextView) view.findViewById(R.id.tvGroupName);
-        tvGroupMembers = (TextView) view.findViewById(R.id.tvGroupMembers);
     }
 
     public void setController(Controller controller){

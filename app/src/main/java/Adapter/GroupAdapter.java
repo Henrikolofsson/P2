@@ -47,7 +47,6 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.Holder> {
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
         holder.tvGroupName.setText(content.get(position));
-        //lägg till medlemmar
     }
 
     @Override
@@ -57,12 +56,10 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.Holder> {
 
     public class Holder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private TextView tvGroupName;
-        private TextView tvGroupMembers;
 
         public Holder(@NonNull View itemView) {
             super(itemView);
             tvGroupName = (TextView) itemView.findViewById(R.id.tvGroupName);
-            tvGroupMembers = (TextView) itemView.findViewById(R.id.tvGroupMembers);
             itemView.setOnClickListener(this);
         }
 

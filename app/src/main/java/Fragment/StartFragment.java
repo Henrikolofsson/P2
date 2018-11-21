@@ -3,7 +3,9 @@ package Fragment;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,6 +35,8 @@ public class StartFragment extends Fragment {
     private GroupAdapter groupAdapter;
     private List<String> content = new ArrayList<>();
 
+    private Button getGroups;
+
     public StartFragment() {
         // Required empty public constructor
     }
@@ -56,10 +60,14 @@ public class StartFragment extends Fragment {
         etGroup = (EditText) view.findViewById(R.id.etGroup);
         switchRegister = (Switch) view.findViewById(R.id.switchRegister);
         rvGroups = (RecyclerView) view.findViewById(R.id.rvGroups);
+        rvGroups.setLayoutManager(new LinearLayoutManager(getActivity()));
+        getGroups = (Button) view.findViewById(R.id.getAvailableGroups);
+
     }
 
     private void registerListener(){
         switchRegister.setOnCheckedChangeListener(new SwitchListener());
+        getGroups.setOnClickListener(new GetGroupsListener());
     }
 
     public void setController(Controller controller){
@@ -68,13 +76,14 @@ public class StartFragment extends Fragment {
 
     public void setContent(ArrayList<String> content){
         this.content = content;
+        groupAdapter.notifyDataSetChanged();
     }
 
     private class SwitchListener implements Switch.OnCheckedChangeListener {
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if(isChecked){
-                
+                controller.register(etGroup.getText().toString(), etUser.getText().toString());
             } else {
 
             }
@@ -95,6 +104,16 @@ public class StartFragment extends Fragment {
         super.onResume();
         if(content!=null){
             groupAdapter.setContent(content);
+        }
+    }
+
+    private class GetGroupsListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            for(int i = 0; i < content.size(); i++){
+                Log.d("TESTAR", content.get(i));
+            }
+            update();
         }
     }
 }
