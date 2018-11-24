@@ -1,9 +1,14 @@
 package henrik.mau.p2;
 
+import android.app.Dialog;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,6 +44,7 @@ public class Controller {
 
     private JSONArray jsonArray;
     private ArrayList<String> groups = new ArrayList<>();
+    private ArrayList<String> members = new ArrayList<>();
 
     private Handler handler = new Handler(Looper.getMainLooper());
 
@@ -118,9 +124,35 @@ public class Controller {
         this.groups = groups;
     }
 
+    public void setMembers(ArrayList<String> members){
+        this.members = members;
+    }
+
     public ArrayList<String> getGroups() {
         return groups;
     }
+
+    public boolean isServicesOK(){
+        Log.d("IsServiceOk", "Checking google services version");
+        int available = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mainActivity);
+
+        if(available == ConnectionResult.SUCCESS){
+            Log.d("ServiceOK", "Service is right version");
+            return true;
+        }
+        else if(GoogleApiAvailability.getInstance().isUserResolvableError(available)){
+            Log.d("ServiceNotOK", "Service resulted in error, but can't solve it");
+            Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(mainActivity, available, 9001);
+        } else {
+            Toast.makeText(mainActivity, "You cant make map requests", Toast.LENGTH_SHORT).show();
+        }
+        return false;
+    }
+
+    public void setMapFragment(){
+        setFragment("MapFragment");
+    }
+
 
     //----------------------------------------------------------------------------------------
 
@@ -190,6 +222,25 @@ public class Controller {
         }).start();
     }
 
+    public void getGroupMembers(final String groupname){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONObject object = new JSONObject();
+                    object.put("type", "members");
+                    object.put("group", groupname);
+                    dos.writeUTF(object.toString());
+                    dos.flush();
+                }catch(JSONException e){
+                    e.printStackTrace();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     public void checkInput(JSONObject jsonObject){
         try {
             if(jsonObject.getString("type").equals("groups")){
@@ -209,6 +260,9 @@ public class Controller {
                 });
             }
             if(jsonObject.getString("type").equals("members")){
+
+            }
+            if(jsonObject.getString("type").equals("locations")){
 
             }
         } catch(JSONException e){

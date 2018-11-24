@@ -8,4 +8,6 @@
     <string name="Registered">Registered</string>
     <string name="Unregistered">Unregistered</string>
     <string name="title_activity_maps">Map</string>
+    <string name="google_maps_API_key">AIzaSyDrG9VzP9m8_9xxanZ_lUZhyHboUbwnJJw</string>
+    <string name="leavegroup">Leave</string>
 </resources>

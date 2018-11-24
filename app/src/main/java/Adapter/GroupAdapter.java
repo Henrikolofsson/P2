@@ -65,6 +65,9 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.Holder> {
 
         @Override
         public void onClick(View v) {
+            if(controller.isServicesOK()){
+                controller.setMapFragment();
+            }
 
         }
     }
