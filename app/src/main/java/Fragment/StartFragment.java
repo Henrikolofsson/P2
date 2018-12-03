@@ -30,12 +30,12 @@ public class StartFragment extends Fragment {
     private Controller controller;
     private EditText etUser;
     private EditText etGroup;
-    private Switch switchRegister;
     private RecyclerView rvGroups;
     private GroupAdapter groupAdapter;
     private List<String> content = new ArrayList<>();
 
     private Button getGroups;
+    private Button btnRegister;
 
     public StartFragment() {
         // Required empty public constructor
@@ -58,16 +58,16 @@ public class StartFragment extends Fragment {
     private void initializeComponents(View view){
         etUser = (EditText) view.findViewById(R.id.etUser);
         etGroup = (EditText) view.findViewById(R.id.etGroup);
-        switchRegister = (Switch) view.findViewById(R.id.switchRegister);
         rvGroups = (RecyclerView) view.findViewById(R.id.rvGroups);
         rvGroups.setLayoutManager(new LinearLayoutManager(getActivity()));
         getGroups = (Button) view.findViewById(R.id.getAvailableGroups);
+        btnRegister = (Button) view.findViewById(R.id.btnRegister);
 
     }
 
     private void registerListener(){
-        switchRegister.setOnCheckedChangeListener(new SwitchListener());
         getGroups.setOnClickListener(new GetGroupsListener());
+        btnRegister.setOnClickListener(new RegisterUserListener());
     }
 
     public void setController(Controller controller){
@@ -77,17 +77,13 @@ public class StartFragment extends Fragment {
     public void setContent(ArrayList<String> content){
         this.content = content;
         groupAdapter.notifyDataSetChanged();
+        for(String str : content){
+            Log.d("HEREITIS", str);
+        }
     }
 
-    private class SwitchListener implements Switch.OnCheckedChangeListener {
-        @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if(isChecked){
-                controller.register(etGroup.getText().toString(), etUser.getText().toString());
-            } else {
-
-            }
-        }
+    public String getUserName(){
+        return etUser.getText().toString();
     }
 
     public void update(){
@@ -104,6 +100,20 @@ public class StartFragment extends Fragment {
         super.onResume();
         if(content!=null){
             groupAdapter.setContent(content);
+        }
+    }
+
+    public void unregistered(){
+        content.clear();
+        groupAdapter.notifyDataSetChanged();
+        update();
+    }
+
+    private class RegisterUserListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            controller.register(etGroup.getText().toString(), etUser.getText().toString());
+            Log.d("NOTHINGHAPPENS", "NOTHINGHAPPENS");
         }
     }
 

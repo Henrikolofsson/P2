@@ -66,7 +66,9 @@ public class GroupAdapter extends RecyclerView.Adapter<GroupAdapter.Holder> {
         @Override
         public void onClick(View v) {
             if(controller.isServicesOK()){
-                controller.setMapFragment();
+                controller.initMap(tvGroupName.getText().toString());
+                if(controller.getRealMembers()!=null){
+                }
             }
 
         }

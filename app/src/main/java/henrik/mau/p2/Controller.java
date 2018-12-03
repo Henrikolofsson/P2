@@ -1,9 +1,17 @@
 package henrik.mau.p2;
 
+import android.Manifest;
 import android.app.Dialog;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -21,9 +29,15 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import Entities.Group;
+import Entities.Member;
+import Entities.User;
 import Fragment.DataFragment;
 import Fragment.StartFragment;
 import Fragment.MapFragment;
@@ -45,20 +59,39 @@ public class Controller {
     private JSONArray jsonArray;
     private ArrayList<String> groups = new ArrayList<>();
     private ArrayList<String> members = new ArrayList<>();
+    private ArrayList<Member> realMembers = new ArrayList<>();
+    private String activeGroup;
+    private String userName;
+    private User user;
+    private LocationManager locationManager;
+    private LocationListener locationListener;
+    private Location lastLocation;
+    private boolean registeredUser = false;
+    private Member member;
 
     private Handler handler = new Handler(Looper.getMainLooper());
+
+    private HashMap<String, ArrayList<Member>> memberHash = new HashMap<String, ArrayList<Member>>();
+    private ArrayList<Member> tempArray;
 
     public Controller(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
         initializeFragments();
         setFragment("StartFragment");
         connect();
+        initializeLocation();
     }
 
     private void initializeFragments() {
         initializeDataFragment();
         initializeStartFragment();
         initializeMapFragment();
+    }
+
+    private void initializeLocation(){
+        locationManager = (LocationManager) mainActivity.getSystemService(Context.LOCATION_SERVICE);
+        locationListener = new LocListener();
+        positionTimer();
     }
 
     private void initializeDataFragment() {
@@ -124,8 +157,20 @@ public class Controller {
         this.groups = groups;
     }
 
-    public void setMembers(ArrayList<String> members){
-        this.members = members;
+    public void setRealMembers(ArrayList<Member> members){
+        this.realMembers = members;
+    }
+
+    public ArrayList<Member> getRealMembers(){
+        return realMembers;
+    }
+
+    public void setActiveGroup(String activeGroup){
+        this.activeGroup = activeGroup;
+    }
+
+    public String getActiveGroup(){
+        return activeGroup;
     }
 
     public ArrayList<String> getGroups() {
@@ -149,8 +194,25 @@ public class Controller {
         return false;
     }
 
+    public void setLastLocation(Location location){
+        this.lastLocation = location;
+    }
+
+    public Location getLastLocation(){
+        return lastLocation;
+    }
+
     public void setMapFragment(){
         setFragment("MapFragment");
+    }
+
+    public void setStartFragment(){
+        setFragment("StartFragment");
+    }
+
+    public void updateMapMarkers(){
+        mapFragment.setMembers(getRealMembers());
+        mapFragment.updateMarkers();
     }
 
 
@@ -203,6 +265,28 @@ public class Controller {
         }).start();
     }
 
+    public void unregister(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    JSONObject json = new JSONObject();
+                    json.put("type", "unregister");
+                    json.put("id", user.getId());
+                    Log.d("USERID2", json.toString()); //HÄR
+                    dos.writeUTF(json.toString());
+                    dos.flush();
+                    memberHash.clear();
+                    startFragment.unregistered();
+                } catch(JSONException e){
+                    e.printStackTrace();
+                } catch(IOException e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     public void getAvailableGroups(){
         new Thread(new Runnable() {
             @Override
@@ -243,6 +327,16 @@ public class Controller {
 
     public void checkInput(JSONObject jsonObject){
         try {
+            if(jsonObject.getString("type").equals("register")){
+                String userid = jsonObject.getString("id");
+                String usergroup = jsonObject.getString("group");
+                user = new User();
+                user.setId(userid);
+                user.setGroup(usergroup);
+                user.setUserName(startFragment.getUserName());
+                Log.d("USERINFO", user.getUserName() +" " + user.getId());
+               registeredUser = true;
+            }
             if(jsonObject.getString("type").equals("groups")){
                 jsonArray = jsonObject.getJSONArray("groups");
                 groups.clear();
@@ -260,9 +354,43 @@ public class Controller {
                 });
             }
             if(jsonObject.getString("type").equals("members")){
+                String groupName = jsonObject.getString("group");
+                JSONArray individualObjectArray = jsonObject.getJSONArray("members");
+
+                members.clear();
+                for(int i = 0; i < individualObjectArray.length(); i++){
+                        JSONObject jsonMember = individualObjectArray.getJSONObject(i);
+                        members.add(jsonMember.getString("member"));
+                    }
 
             }
             if(jsonObject.getString("type").equals("locations")){
+                String group = jsonObject.getString("group");
+                JSONArray jsonArray = jsonObject.getJSONArray("location");
+                tempArray = new ArrayList<>();
+
+                   for(int i = 0; i <= jsonArray.length()-1; i++){
+                       JSONObject memberObject = jsonArray.getJSONObject(i);
+                       String memberName = memberObject.getString("member");
+                       String longitude = memberObject.getString("longitude");
+                       String latitude = memberObject.getString("latitude");
+                       member = new Member(memberName, Double.parseDouble(longitude), Double.parseDouble(latitude));
+                       tempArray.add(member);
+                       Log.d("Group", group);
+                       for(Member m : tempArray){
+                           Log.d("Member", m.getName());
+                       }
+                   }
+                   memberHash.put(group, tempArray);
+            }
+            if(jsonObject.getString("type").equals("unregister")){
+                Log.d("UNREGISTER:", "TRUE");
+                Log.d("KOLLAUNREGISTER", jsonObject.getString("id"));
+                registeredUser = false;
+            }
+            if(jsonObject.getString("type").equals("exception")){
+                String exception = jsonObject.getString("message");
+                Log.d("EXCEPTION", exception);
 
             }
         } catch(JSONException e){
@@ -275,10 +403,64 @@ public class Controller {
             @Override
             public void run(){
                 getAvailableGroups();
+                Log.d("WTF","XxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX");
             }
         };
         Timer timer = new Timer();
-        timer.schedule(timerTask,0,5000);
+        timer.schedule(timerTask,5000,5000);
+    }
+
+    public void positionTimer(){
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                while(registeredUser){
+                    sendPosition(user.getId());
+                }
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule(timerTask, 1000, 10000);
+    }
+
+    public void sendPosition(final String id){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                    try {
+                        if (lastLocation != null) {
+                              JSONObject positionObject = new JSONObject();
+                              positionObject.put("type", "location");
+                              positionObject.put("id", id);
+                              positionObject.put("longitude", Double.toString(lastLocation.getLongitude()));
+                              positionObject.put("latitude", Double.toString(lastLocation.getLatitude()));
+                              dos.writeUTF(positionObject.toString());
+                              dos.flush();
+                        }
+                           } catch(JSONException e){
+                              e.printStackTrace();
+                          } catch(IOException e){
+                            e.printStackTrace();
+                    }
+                    }
+        }).start();
+    }
+
+    public void disconnect(){
+        try {
+            connectedSocket.close();
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+        connectedSocket = null;
+
+    }
+
+    protected void onResume(){
+        if(ContextCompat.checkSelfPermission(mainActivity, Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED){
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, locationListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener);
+        }
     }
 
     private class InputListener implements Runnable {
@@ -287,7 +469,6 @@ public class Controller {
             while(true){
                 try {
                     JSONObject incomingObject;
-
                     if(dis.available() > 0){
                         incomingObject = new JSONObject(dis.readUTF());
                         checkInput(incomingObject);
@@ -298,4 +479,40 @@ public class Controller {
             }
         }
     }
+
+    private class LocListener implements android.location.LocationListener {
+        @Override
+        public void onLocationChanged(Location location) {
+          lastLocation = location;
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    }
+
+    public void initMap(String activeGroup){
+        setActiveGroup(activeGroup);
+        ArrayList<Member> memberlist = memberHash.get(activeGroup);
+        if(memberlist!=null){
+            setRealMembers(memberlist);
+        }
+        for(Member m : realMembers){
+            Log.d("MEMBER", "NAME " + m.getName() + " LATITUDE " + m.getLatitude() + " LONGITUDE " + m.getLongitude());
+        }
+        mapFragment.setMembers(realMembers);
+        setMapFragment();
+    }
+
 }

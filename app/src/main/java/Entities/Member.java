@@ -2,8 +2,14 @@ package Entities;
 
 public class Member {
     private String name;
-    private long longitude;
-    private long latitude;
+    private double longitude;
+    private double latitude;
+
+    public Member(String name, double latitude, double longitude){
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 
     public String getName() {
         return name;
@@ -13,7 +19,7 @@ public class Member {
         this.name = name;
     }
 
-    public long getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
@@ -21,7 +27,7 @@ public class Member {
         this.longitude = longitude;
     }
 
-    public long getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
@@ -29,6 +35,12 @@ public class Member {
         this.latitude = latitude;
     }
 
-
-
+    @Override
+    public String toString() {
+        return "Member{" +
+                "name='" + name + '\'' +
+                ", longitude=" + longitude +
+                ", latitude=" + latitude +
+                '}';
+    }
 }
